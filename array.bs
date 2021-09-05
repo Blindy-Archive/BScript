@@ -1,0 +1,88 @@
+p_import("BScript.unit_test","unit_test")
+tester = unit_test.test()
+
+// Test Case 0
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+result = fruits.toString();
+tester.assertion(result=="Banana,Orange,Apple,Mango")
+
+// Test Case 1
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+result = fruits.join(" * ");
+tester.assertion(result=="Banana * Orange * Apple * Mango")
+
+// Test Case 2
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+result = fruits.pop()
+tester.assertion(result=="Mango")
+
+
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+let x = fruits.push("Kiwi");   //  x = 5
+tester.assertion(x== 5);
+
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+let x = fruits.shift();
+tester.assertion(x=="Banana")
+tester.assertion(fruits==["Orange", "Apple", "Mango"])
+
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+let x = fruits.unshift("Lemon");
+tester.assertion(x==5)
+tester.assertion(fruits==["Lemon","Banana", "Orange", "Apple", "Mango"])
+
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+delete fruits[0]; 
+tester.assertion(fruits[0]==undefined);
+
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+let removed = fruits.splice(2, 2, "Lemon", "Kiwi");
+tester.assertion(removed==["Apple", "Mango"]);
+tester.assertion(fruits==["Banana", "Orange", "Lemon", "Kiwi"]);
+
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+let removed = fruits.splice(2, 0, "Lemon", "Kiwi");
+tester.assertion(removed==[]);
+tester.assertion(fruits==["Banana", "Orange", "Lemon", "Kiwi", "Apple", "Mango"]);
+
+
+
+let myGirls = ["Cecilie", "Lone"];
+let myBoys = ["Emil", "Tobias", "Linus"];
+// Concatenate (join) myGirls and myBoys
+let myChildren = myGirls.concat(myBoys);  
+tester.assertion(myChildren==["Cecilie", "Lone","Emil", "Tobias", "Linus"])
+
+let arr1 = ["Cecilie", "Lone"];
+let arr2 = ["Emil", "Tobias", "Linus"];
+let arr3 = ["Robin", "Morgan"];
+let myChildren = arr1.concat(arr2, arr3);
+tester.assertion(myChildren==["Cecilie", "Lone","Emil", "Tobias", "Linus","Robin","Morgan"])
+
+let fruits = ["Banana", "Orange", "Lemon", "Apple", "Mango"];
+let citrus = fruits.slice(1);
+tester.assertion(citrus==["Orange","Lemon","Apple","Mango"])
+
+let fruits = ["Banana", "Orange", "Apple", "Mango"];
+let result = fruits.toString();
+tester.assertion(result=="Banana,Orange,Apple,Mango")
+
+
+let points = [40, 100, 1, 5, 25, 10];
+points.sort(function(a){return a/a*2});
+console.log(points);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+tester.finalize();

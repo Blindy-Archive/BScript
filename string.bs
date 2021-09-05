@@ -1,0 +1,151 @@
+p_import("BScript.unit_test","unit_test")
+tester = unit_test.test()
+
+// Test Case 0
+let str = "Apple, Banana, Kiwi";
+return_val = str.slice(7, 13)
+// console.log(return_val)
+tester.assertion(return_val=="Banana")
+
+// Test Case 1
+let str = "Apple, Banana, Kiwi";
+return_val = str.length
+// console.log(return_val)
+tester.assertion(return_val==19)
+
+// Test Case 2
+let str = "Apple, Banana, Kiwi";
+return_val = str.slice(null,2)
+// console.log(return_val)
+tester.assertion(return_val=="Ap")
+
+// Test Case 3
+let str = "Apple, Banana, Kiwi";
+return_val = str.substr(7, 6)
+// console.log(return_val)
+tester.assertion(return_val=="Banana")
+
+// Test Case 4
+let str = "Apple, Banana, Kiwi";
+return_val = str.substr(-4)    // Returns Kiwi
+// console.log(return_val)
+tester.assertion(return_val=="Kiwi")
+
+// Test Case 5
+let text = "Please visit Microsoft and Microsoft!";
+let newText = text.replace("Microsoft", "W3Schools");
+// console.log(newText)
+tester.assertion(newText=="Please visit W3Schools and W3Schools!")
+
+// Test Case 6
+let text1 = "Hello World!";       // String
+let text2 = text1.toUpperCase()
+// console.log(text2)
+tester.assertion(text2=="HELLO WORLD!")
+
+// Test Case 7
+let text1 = "Hello World!";       // String
+let text2 = text1.toLowerCase();  // text2 is text1 converted to lower
+// console.log(text2)
+tester.assertion(text2=="hello world!")
+
+// Test Case 8
+let text1 = "Hello";
+let text2 = "World";
+let text3 = text1.concat(" ",text2);
+// console.log(text3)
+tester.assertion(text3=="Hello World")
+
+// Test Case 9
+let text = "5";
+let text2 = text.padStart(4,"0") // Returns 0005
+// console.log(text2)
+tester.assertion(text2=="0005")
+
+// Test Case 10
+let text = "5";
+let text2 = text.padEnd(4,"0")     // Returns 5000
+// console.log(text2)
+tester.assertion(text2=="5000")
+
+// Test Case 11
+let text = "HELLO WORLD";
+let text2 = text.charAt(0)           // Returns H
+// console.log(text2)
+tester.assertion(text2=="H")
+
+// Test Case 12
+let text = "HELLO WORLD";
+let text2 = text.charCodeAt(0)       // Returns 72
+// console.log(text2)
+tester.assertion(text2==72)
+
+// Test Case 13
+let text = "a,b,c,d,e,f";
+const myArray = text.split(",");
+// console.log(myArray[0])
+tester.assertion(myArray[0]=="a")
+
+// Test Case 14
+let str = "Please locate where 'locate' occurs!";
+let index = str.indexOf("locate")    // Returns 7
+// console.log(index)
+tester.assertion(index==7)
+
+// Test Case 15
+let str = "Please locate where 'locate' occurs!";
+let index = str.lastIndexOf("locate")    // Returns 21
+// console.log(index)
+tester.assertion(index==21)
+
+// let str = "Please locate where 'locate' occurs!";
+// let index = str.lastIndexOf("John")    // Raise Value Error
+// // console.log(index)
+
+// Test Case 16
+let str = "Please locate where 'locate' occurs!";
+let index = str.indexOf("locate", 15)  
+// console.log(index)
+tester.assertion(index==21)
+
+// Test Case 17
+let str = "Please locate where 'locate' occurs!";
+let index  = str.search("locate")     // Returns 7
+// console.log(index)
+tester.assertion(index==7)
+
+// Test Case 18
+let text = "Hello world, welcome to the universe.";
+let is_include = text.includes("world")
+// console.log(is_include)
+tester.assertion(is_include)
+
+// Test Case 19
+let text = "Hello world, welcome to the universe.";
+let is = text.startsWith("world")    // Returns false
+// console.log(is)
+tester.assertion()
+
+// Test Case 20
+let text = "Hello world, welcome to the universe.";
+let is = text.startsWith("world", 5)    // Returns false
+// console.log(is)
+tester.assertion(is==false)
+
+// Test Case 21
+let text = "Hello world, welcome to the universe.";
+let is = text.startsWith("world", 6)    // Returns true
+// console.log(is)
+tester.assertion(is)
+
+// Test Case 22
+var text = "John Doe";
+let is = text.endsWith("Doe")    // Returns true
+// console.log(is)
+tester.assertion(is)
+// Test Case 22
+var text = "John Doe";
+let is = text.substring(2,4)    // Returns true
+// console.log(is)
+tester.assertion(is=="hn")
+tester.finalize()
