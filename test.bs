@@ -1,10 +1,10 @@
 
 const numbers = [45, 4, 9, 16, 25];
-let txt = "";
+let txt = "a";
 numbers.forEach(myFunction);
 
-function myFunction(index) {
-  txt = index.toString() + "<br>";
+function myFunction(value) {
+  txt += value.toString()+",";
+  
 }
-txt= "selami"
 console.log(txt)

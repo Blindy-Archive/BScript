@@ -193,7 +193,7 @@ class BS_array(list):
   def forEach(self,function):
     
     for index,value in enumerate(self):
-      temp_kwargs = {"index":index,"value":value,"array":self}
+      temp_kwargs = {"index":variable2BS(index),"value":variable2BS(value),"array":self}
       
       function(**{k:temp_kwargs[k] for k in function.args})
 class BS_int(int):

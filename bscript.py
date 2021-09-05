@@ -128,11 +128,10 @@ def main(filename=None, lang="en"):
 
         executor(parse(read))
 
-        # print(executor.variables)
+        # print(executor.variables.__globals__)
     else:
         terminal()
 
 
 if __name__ == "__main__":
-
     main(*sys.argv[1:])

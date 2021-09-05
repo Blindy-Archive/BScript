@@ -51,8 +51,10 @@ __private__ = __reserveds__.copy()^{"clear","copy","fromkeys","get","items","key
 __reserved__keys__ = {"this","undefined","Infinity"}
 __reserveds__.add("__private__")
 __protected__ = {"__class__"}
+__globals__ = {}
 
 class environment(dict):
+  
   def __init__(self, *args,locked=False, **kwargs):
     _args = []
     _kwargs = {}
@@ -69,28 +71,30 @@ class environment(dict):
     dict.__setitem__(self,"this",self)
     self.__class__ = environment
     self.__constants__ = set()
-    if not locked:
-      self.__globals__ = environment(locked=True)
-    else:
-      self.__globals__ = {}
+    self.locked = locked
+
+
     dict.__setitem__(self,"Infinity",float("inf"))
+  def get_env(self):
+    if self.locked:
+      return self
   def __getitem__(self,key):
-    if key in self.__globals__:
-      return self.__globals__[key]
+    if key in __globals__:
+      return dict.__getitem__(__globals__,key)
     return dict.__getitem__(self, key)
   def get(self,key,default=None):
     if key in self.__globals__:
       return self.__globals__.get(key)
     return super(environment,self).get(key,default)
   def __contains__(self, key):
-    return dict.__contains__(self,key) or dict.__contains__(self.__globals__,key)
+    return dict.__contains__(self,key) or dict.__contains__(__globals__,key)
   def __setitem__(self,key,value):
     if key in __reserved__keys__:
       raise ValueError(f"'{key}' cannot be set due to its protection level")
     elif key in self.__constants__:
       raise TypeError("Assignment to constant variable.")
-    elif key in self.__globals__:
-      self.__globals__[key] = value
+    elif key in __globals__:
+      dict.__setitem__(__globals__,key,variable2BS(value))
     else:
       dict.__setitem__(self,key,variable2BS(value))
   def __getattribute__(self,name):
@@ -101,7 +105,7 @@ class environment(dict):
     return super(environment,self).__getattribute__(name)
   def __add_global__(self,kwargs):
     for name,value in kwargs.items():
-      self.__globals__[name] = variable2BS(value)
+      __globals__[name] = variable2BS(value)
       
   def __add_const__(self,kwargs):
     for name,value in kwargs.items():
@@ -162,7 +166,7 @@ class BS_function(object):
           raise TypeError(f"{self.__name__}() got an unexpected keyword argument: {k2}")
         else:
           variables[k] = v2
-      return BS_executor(env_name=self.get_env_name(),variables=variables,parent=self.parent,__globals__=self.executor.variables.__globals__)(self.body)
+      return BS_executor(env_name=self.get_env_name(),variables=variables,parent=self.parent)(self.body)
     def get_env_name(self):
       return self.executor.env_name+"."+getattr(self,"__name__")
     def __str__(self):
@@ -201,7 +205,7 @@ class BS_async_function(BS_function):
     def get_as_async():
       pass
 class BS_executor(object):
-    def __init__(self,env_name="__main__",variables={},sandbox_mode=True,__importables__=__importables__,mem_size=8000,parent=None,__globals__=environment()):
+    def __init__(self,env_name="__main__",variables={},sandbox_mode=True,__importables__=__importables__,mem_size=8000,parent=None):
         original = {"p_import":self.p_import,
         "async":self.Async,
         "await":self.Await,
@@ -217,8 +221,12 @@ class BS_executor(object):
         self.sandbox_mode = sandbox_mode
         self.__importables__ = __importables__
         variables.update(original)
-        self.variables = environment(variables)
-        setattr(self.variables,"__globals__",__globals__)
+        self.variables = variables if isinstance(variables, environment) else environment(variables) 
+        
+        # if env_name != "__main__":
+        #   print(env_name)
+        #   print(self.variables.__globals__)
+        #   print(self.variables["txt"])
         self.before_var_mem = {}
         self.terminal = False
         self.async_loop = asyncio.get_event_loop()

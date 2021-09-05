@@ -55,8 +55,8 @@
           },
           "init": {
             "type": "Literal",
-            "value": "",
-            "raw": "\"\""
+            "value": "a",
+            "raw": "\"a\""
           }
         }
       ],
@@ -95,7 +95,7 @@
       "params": [
         {
           "type": "Identifier",
-          "name": "index"
+          "name": "value"
         }
       ],
       "defaults": [],
@@ -106,7 +106,7 @@
             "type": "ExpressionStatement",
             "expression": {
               "type": "AssignmentExpression",
-              "operator": "=",
+              "operator": "+=",
               "left": {
                 "type": "Identifier",
                 "name": "txt"
@@ -121,7 +121,7 @@
                     "computed": false,
                     "object": {
                       "type": "Identifier",
-                      "name": "index"
+                      "name": "value"
                     },
                     "property": {
                       "type": "Identifier",
@@ -132,8 +132,8 @@
                 },
                 "right": {
                   "type": "Literal",
-                  "value": "<br>",
-                  "raw": "\"<br>\""
+                  "value": ",",
+                  "raw": "\",\""
                 }
               }
             }
@@ -142,22 +142,6 @@
       },
       "generator": false,
       "expression": false
-    },
-    {
-      "type": "ExpressionStatement",
-      "expression": {
-        "type": "AssignmentExpression",
-        "operator": "=",
-        "left": {
-          "type": "Identifier",
-          "name": "txt"
-        },
-        "right": {
-          "type": "Literal",
-          "value": "selami",
-          "raw": "\"selami\""
-        }
-      }
     },
     {
       "type": "ExpressionStatement",
