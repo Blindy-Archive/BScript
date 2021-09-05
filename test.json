@@ -2,26 +2,160 @@
   "type": "Program",
   "body": [
     {
+      "type": "VariableDeclaration",
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "id": {
+            "type": "Identifier",
+            "name": "numbers"
+          },
+          "init": {
+            "type": "ArrayExpression",
+            "elements": [
+              {
+                "type": "Literal",
+                "value": 45.0,
+                "raw": "45"
+              },
+              {
+                "type": "Literal",
+                "value": 4.0,
+                "raw": "4"
+              },
+              {
+                "type": "Literal",
+                "value": 9.0,
+                "raw": "9"
+              },
+              {
+                "type": "Literal",
+                "value": 16.0,
+                "raw": "16"
+              },
+              {
+                "type": "Literal",
+                "value": 25.0,
+                "raw": "25"
+              }
+            ]
+          }
+        }
+      ],
+      "kind": "const"
+    },
+    {
+      "type": "VariableDeclaration",
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "id": {
+            "type": "Identifier",
+            "name": "txt"
+          },
+          "init": {
+            "type": "Literal",
+            "value": "",
+            "raw": "\"\""
+          }
+        }
+      ],
+      "kind": "let"
+    },
+    {
+      "type": "ExpressionStatement",
+      "expression": {
+        "type": "CallExpression",
+        "callee": {
+          "type": "MemberExpression",
+          "computed": false,
+          "object": {
+            "type": "Identifier",
+            "name": "numbers"
+          },
+          "property": {
+            "type": "Identifier",
+            "name": "forEach"
+          }
+        },
+        "arguments": [
+          {
+            "type": "Identifier",
+            "name": "myFunction"
+          }
+        ]
+      }
+    },
+    {
+      "type": "FunctionDeclaration",
+      "id": {
+        "type": "Identifier",
+        "name": "myFunction"
+      },
+      "params": [
+        {
+          "type": "Identifier",
+          "name": "index"
+        }
+      ],
+      "defaults": [],
+      "body": {
+        "type": "BlockStatement",
+        "body": [
+          {
+            "type": "ExpressionStatement",
+            "expression": {
+              "type": "AssignmentExpression",
+              "operator": "=",
+              "left": {
+                "type": "Identifier",
+                "name": "txt"
+              },
+              "right": {
+                "type": "BinaryExpression",
+                "operator": "+",
+                "left": {
+                  "type": "CallExpression",
+                  "callee": {
+                    "type": "MemberExpression",
+                    "computed": false,
+                    "object": {
+                      "type": "Identifier",
+                      "name": "index"
+                    },
+                    "property": {
+                      "type": "Identifier",
+                      "name": "toString"
+                    }
+                  },
+                  "arguments": []
+                },
+                "right": {
+                  "type": "Literal",
+                  "value": "<br>",
+                  "raw": "\"<br>\""
+                }
+              }
+            }
+          }
+        ]
+      },
+      "generator": false,
+      "expression": false
+    },
+    {
       "type": "ExpressionStatement",
       "expression": {
         "type": "AssignmentExpression",
         "operator": "=",
         "left": {
           "type": "Identifier",
-          "name": "y"
+          "name": "txt"
         },
         "right": {
-          "type": "AssignmentExpression",
-          "operator": "=",
-          "left": {
-            "type": "Identifier",
-            "name": "x"
-          },
-          "right": {
-            "type": "Literal",
-            "value": 1.0,
-            "raw": "1"
-          }
+          "type": "Literal",
+          "value": "selami",
+          "raw": "\"selami\""
         }
       }
     },
@@ -41,7 +175,12 @@
             "name": "log"
           }
         },
-        "arguments": []
+        "arguments": [
+          {
+            "type": "Identifier",
+            "name": "txt"
+          }
+        ]
       }
     }
   ]

@@ -53,36 +53,64 @@ __reserveds__.add("__private__")
 __protected__ = {"__class__"}
 
 class environment(dict):
-  def __init__(self, *args, **kwargs):
-    super(environment, self).__init__(*args, **kwargs)
+  def __init__(self, *args,locked=False, **kwargs):
+    _args = []
+    _kwargs = {}
+    for arg in args:
+      temp_dict = {}
+      for k,v in arg.items():
+        temp_dict[k] = variable2BS(v)
+      _args.append(temp_dict)
+    for k,v in kwargs.items():
+      _kwargs[k] = variable2BS(v)
+    
+    self.locked = locked
+    super(environment, self).__init__(*_args, **_kwargs)
     dict.__setitem__(self,"this",self)
     self.__class__ = environment
     self.__constants__ = set()
+    if not locked:
+      self.__globals__ = environment(locked=True)
+    else:
+      self.__globals__ = {}
     dict.__setitem__(self,"Infinity",float("inf"))
   def __getitem__(self,key):
-    
+    if key in self.__globals__:
+      return self.__globals__[key]
     return dict.__getitem__(self, key)
+  def get(self,key,default=None):
+    if key in self.__globals__:
+      return self.__globals__.get(key)
+    return super(environment,self).get(key,default)
+  def __contains__(self, key):
+    return dict.__contains__(self,key) or dict.__contains__(self.__globals__,key)
   def __setitem__(self,key,value):
     if key in __reserved__keys__:
       raise ValueError(f"'{key}' cannot be set due to its protection level")
     elif key in self.__constants__:
       raise TypeError("Assignment to constant variable.")
+    elif key in self.__globals__:
+      self.__globals__[key] = value
     else:
-      dict.__setitem__(self,key,value)
+      dict.__setitem__(self,key,variable2BS(value))
   def __getattribute__(self,name):
     if name in __private__:
       raise ValueError(f"'{name}' is inaccessible due to its protection level")
     elif name in __protected__:
       return self
     return super(environment,self).__getattribute__(name)
+  def __add_global__(self,kwargs):
+    for name,value in kwargs.items():
+      self.__globals__[name] = variable2BS(value)
+      
   def __add_const__(self,kwargs):
     for name,value in kwargs.items():
-      self[name] = value
+      self[name] = variable2BS(value)
       self.__constants__.add(name)
   def __setattr__(self,name,value):
     if name in __reserveds__ or name in __private__:
       raise ValueError(f"'{name}' cannot be set due to its protection level")
-    super(environment,self).__setattr__(name,value)
+    super(environment,self).__setattr__(name,variable2BS(value))
 
 
 def raise_exception(exception):
@@ -95,6 +123,7 @@ class BS_function(object):
         else:
           setattr(self,"__name__","function")
         self.script = script
+        self.executor = executor
         self.variables = environment({k["name"]:executor.calls[v.get("type")](**v) if v else required() for k,v in list(itertools.zip_longest(script["params"], script["defaults"]))})
         self.parent = parent
         # if parent is not None:
@@ -111,7 +140,7 @@ class BS_function(object):
       return {k:v   for k,v in first.items() if  k not in other}
     def __call__(self,*args,**kwargs):
       
-      variables = {}
+      variables = environment()
       variables.update(self.executor.variables.copy())
       variables.update(self.variables)
       k_words = {k:v for k,v in zip(self.kwargs[:abs(self.args_len - len(args))],args[abs(self.args_len - len(args)):])}
@@ -133,7 +162,7 @@ class BS_function(object):
           raise TypeError(f"{self.__name__}() got an unexpected keyword argument: {k2}")
         else:
           variables[k] = v2
-      return BS_executor(env_name=self.get_env_name(),variables=variables,parent=self.parent)(self.body)
+      return BS_executor(env_name=self.get_env_name(),variables=variables,parent=self.parent,__globals__=self.executor.variables.__globals__)(self.body)
     def get_env_name(self):
       return self.executor.env_name+"."+getattr(self,"__name__")
     def __str__(self):
@@ -172,7 +201,7 @@ class BS_async_function(BS_function):
     def get_as_async():
       pass
 class BS_executor(object):
-    def __init__(self,env_name="__main__",variables={},sandbox_mode=True,__importables__=__importables__,mem_size=8000,parent=None):
+    def __init__(self,env_name="__main__",variables={},sandbox_mode=True,__importables__=__importables__,mem_size=8000,parent=None,__globals__=environment()):
         original = {"p_import":self.p_import,
         "async":self.Async,
         "await":self.Await,
@@ -189,6 +218,7 @@ class BS_executor(object):
         self.__importables__ = __importables__
         variables.update(original)
         self.variables = environment(variables)
+        setattr(self.variables,"__globals__",__globals__)
         self.before_var_mem = {}
         self.terminal = False
         self.async_loop = asyncio.get_event_loop()
@@ -219,7 +249,9 @@ class BS_executor(object):
       if self.variable_mem_size > self.mem_size:
         raise MemoryError("Sandbox reached its memory limit")
     def variable2BS(self,value):
-      if isinstance(value,dict):
+      if isinstance(value,int):
+        return BS_int(value)
+      elif isinstance(value,dict):
         return BS_object(value)
       elif isinstance(value,str):
         return BS_string(value)
@@ -234,7 +266,7 @@ class BS_executor(object):
         
         return bool_indicators.get(raw)
       elif raw.isnumeric():
-        return int(raw)
+        return BS_int(raw)
       elif raw == "null":
         return None
       else:
@@ -301,7 +333,6 @@ class BS_executor(object):
       if kwargs.get("delete",False):
         self.delete(self.variables,kwargs["name"])
       elif kwargs.get("assignment"):
-
         
         if kwargs["name"] in self.variables:
           return self.variables[kwargs["name"]]
@@ -309,10 +340,7 @@ class BS_executor(object):
           raise NameError(f"name '{kwargs['name']}' is not defined")
       
       else:
-        if False:
-          pass
-        else:
-          return kwargs["name"]
+        return kwargs["name"]
     def VariableDeclaration(self,**kwargs):
       skwargs = {}
       kind = kwargs["kind"]
@@ -323,6 +351,8 @@ class BS_executor(object):
         skwargs[name] = value
       if kind == "const":
         self.variables.__add_const__(skwargs)
+      elif kind == "let":
+        self.variables.__add_global__(skwargs)
       else:
         self.variables.update(skwargs)
     def ThisExpression(self,**kwargs):
@@ -382,7 +412,6 @@ class BS_executor(object):
         return func_callable
       if isinstance(flatten(expressions)[0],AssignableObject):
         funcs = flatten(expressions)
-        # print(funcs[0].obj,funcs[0].attr)
         funcs[0] = funcs[0].obj[funcs[0].attr]
         return AssignableObject(funcs[0],funcs[1])
       if kwargs["computed"]:
@@ -408,8 +437,9 @@ class BS_executor(object):
               func_callable = func
             elif func_callable is None and isinstance(func,str):
               func_callable = self.variables[func]
-            
+              
             elif func_callable is not None and isinstance(func,str):
+              # FIX
               func_callable = self.variable2BS(getattr(func_callable, func))
             elif func_callable is None and not isinstance(func,str):
               func_callable = func
@@ -431,8 +461,8 @@ class BS_executor(object):
         elif not kwargs.get("func_caller",False):
           self.variables[variable] = value
         
-        if not self.terminal:
-          return {variable:value}
+        
+        return value
       elif (expression:=assignment_expressions.get(kwargs["operator"])):
         variable = self.calls[kwargs["left"]["type"]](**kwargs["left"])
         value = self.calls[kwargs["right"]["type"]](assignment=True,**kwargs["right"])
@@ -462,7 +492,7 @@ class BS_executor(object):
             
           else:
             if not args_lock:
-              args.append(value)
+              args.append(self.variable2BS(value))
             else:
               raise SyntaxError("positional argument follows keyword argument")
         else:
@@ -492,21 +522,17 @@ class BS_executor(object):
       else:
         return result
     def ExpressionStatement(self,**kwargs):
-      # if self.terminal:
-      #   return_value =  self.calls[kwargs["expression"]["type"]](assignment=True,**kwargs["expression"])
-      #   if return_value:
-      #     # protected print ability
-      #     print(return_value)
+      if self.terminal:
+        return_value =  self.calls[kwargs["expression"]["type"]](assignment=True,**kwargs["expression"])
+        if return_value:
+          # protected print ability
+          print(return_value)
         
-      #   return return_value
-      # else:
+        return return_value
+      
       return_value =  self.calls[kwargs["expression"]["type"]](assignment=True,**kwargs["expression"])
-      # TODO: Fix later
-      # values_view = return_value.values()
-      # value_iterator = iter(values_view)
-      # first_value = next(value_iterator)
-      # print(first_value)
-      return first_value
+      
+      return return_value
     def FunctionExpression(self,**kwargs):
       return BS_function(kwargs,executor=self,parent=kwargs.get("parent"))
     def FunctionDeclaration(self,**kwargs):
@@ -528,8 +554,18 @@ class BS_executor(object):
       
     def __call__(self,script,terminal=False):
       self.terminal = terminal
+      if not self.terminal:
+        for index,body in enumerate(script["body"]):
+          body_type = body["type"]
+          if body_type == "FunctionDeclaration":
+            del script["body"][index]
+            
+            # body = script["body"].pop(index)
+            self.calls["FunctionDeclaration"](**body)
+  
       for body in script["body"]:
         body_type = body["type"]
+          
         if body_type == "ReturnStatement":
           return self.ReturnStatement(**body) 
         if (func:=self.calls.get(body_type)) :

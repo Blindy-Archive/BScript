@@ -11,6 +11,14 @@ undefined = type("undefined",(),{
 "__setattribute__":lambda self,name,value: raise_exception(TypeError("Cannot set property '{name}' of undefined")),
 "__getattribute__":lambda self,name:  raise_exception(TypeError(f"Cannot read property '{name}' of undefined")) if name != "__class__" else undefined
 })
+def variable2BS(value):
+      if isinstance(value,int):
+        return BS_int(value)
+      elif isinstance(value,dict):
+        return BS_object(value)
+      elif isinstance(value,str):
+        return BS_string(value)
+      return value
 class AssignableObject():
   def __init__(self,obj,attr):
     self.obj = obj
@@ -93,9 +101,7 @@ class BS_object(dict):
       return cls(obj.__dict__)
     else:
       raise Exception("")
-  # def __str__(self):
-  #   print("selam")
-  #   return str({k:v for k,v in self.__dict__.items() if  k not  in self.__reserveds__})
+  
 NoneType = type(None)
 slicer = {
 (NoneType,int):lambda obj,x,y: obj[:y],
@@ -119,7 +125,6 @@ class BS_string(str):
     return str.__new__(cls, *args, **kw)
   @property
   def length(self):
-    print("a")
     return self.__len__()
   def slice(self, start=None,end=None):
     t = (type(start),type(end))
@@ -177,11 +182,21 @@ class BS_array(list):
     t = (type(start),type(end))
     return slicer.get(t)(self,start,end)
   def toString(self):
-    return ",".join(self)
+    return BS_string(",".join(self))
   def sort(self,key=lambda x:x,reverse=False):
     
     super(BS_array, self).sort(key=key,reverse=reverse)
   def min(self):
-    return min(self)
+    return variable2BS(min(self))
   def max(self):
-    return max(self)
+    return variable2BS(max(self))
+  def forEach(self,function):
+    
+    for index,value in enumerate(self):
+      temp_kwargs = {"index":index,"value":value,"array":self}
+      
+      function(**{k:temp_kwargs[k] for k in function.args})
+class BS_int(int):
+  def toString(self):
+    return BS_string(self.__str__())
+    
