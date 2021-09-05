@@ -1,0 +1,4 @@
+Js2Py==0.71
+pyjsparser==2.7.1
+requests==2.26.0
+colorama==0.4.4
