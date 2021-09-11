@@ -8,41 +8,16 @@
           "type": "VariableDeclarator",
           "id": {
             "type": "Identifier",
-            "name": "numbers"
+            "name": "hour"
           },
           "init": {
-            "type": "ArrayExpression",
-            "elements": [
-              {
-                "type": "Literal",
-                "value": 45.0,
-                "raw": "45"
-              },
-              {
-                "type": "Literal",
-                "value": 4.0,
-                "raw": "4"
-              },
-              {
-                "type": "Literal",
-                "value": 9.0,
-                "raw": "9"
-              },
-              {
-                "type": "Literal",
-                "value": 16.0,
-                "raw": "16"
-              },
-              {
-                "type": "Literal",
-                "value": 25.0,
-                "raw": "25"
-              }
-            ]
+            "type": "Literal",
+            "value": 12.0,
+            "raw": "12"
           }
         }
       ],
-      "kind": "const"
+      "kind": "var"
     },
     {
       "type": "VariableDeclaration",
@@ -51,121 +26,167 @@
           "type": "VariableDeclarator",
           "id": {
             "type": "Identifier",
-            "name": "txt"
+            "name": "count"
           },
           "init": {
             "type": "Literal",
-            "value": "a",
-            "raw": "\"a\""
+            "value": 2.0,
+            "raw": "2"
           }
         }
       ],
-      "kind": "let"
+      "kind": "var"
     },
     {
       "type": "ExpressionStatement",
       "expression": {
-        "type": "CallExpression",
-        "callee": {
-          "type": "MemberExpression",
-          "computed": false,
-          "object": {
-            "type": "Identifier",
-            "name": "numbers"
-          },
-          "property": {
-            "type": "Identifier",
-            "name": "forEach"
-          }
+        "type": "AssignmentExpression",
+        "operator": "=",
+        "left": {
+          "type": "Identifier",
+          "name": "c"
         },
-        "arguments": [
-          {
-            "type": "Identifier",
-            "name": "myFunction"
-          }
-        ]
+        "right": {
+          "type": "Literal",
+          "value": 10.0,
+          "raw": "10"
+        }
       }
     },
     {
-      "type": "FunctionDeclaration",
-      "id": {
-        "type": "Identifier",
-        "name": "myFunction"
-      },
-      "params": [
-        {
+      "type": "IfStatement",
+      "test": {
+        "type": "BinaryExpression",
+        "operator": "==",
+        "left": {
           "type": "Identifier",
-          "name": "value"
+          "name": "c"
+        },
+        "right": {
+          "type": "Identifier",
+          "name": "hour"
         }
-      ],
-      "defaults": [],
-      "body": {
+      },
+      "consequent": {
         "type": "BlockStatement",
         "body": [
           {
             "type": "ExpressionStatement",
             "expression": {
-              "type": "AssignmentExpression",
-              "operator": "+=",
-              "left": {
-                "type": "Identifier",
-                "name": "txt"
+              "type": "CallExpression",
+              "callee": {
+                "type": "MemberExpression",
+                "computed": false,
+                "object": {
+                  "type": "Identifier",
+                  "name": "console"
+                },
+                "property": {
+                  "type": "Identifier",
+                  "name": "log"
+                }
               },
-              "right": {
-                "type": "BinaryExpression",
-                "operator": "+",
-                "left": {
+              "arguments": [
+                {
+                  "type": "Identifier",
+                  "name": "c"
+                },
+                {
+                  "type": "Identifier",
+                  "name": "hour"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "alternate": {
+        "type": "IfStatement",
+        "test": {
+          "type": "BinaryExpression",
+          "operator": "==",
+          "left": {
+            "type": "Identifier",
+            "name": "c"
+          },
+          "right": {
+            "type": "Identifier",
+            "name": "hour"
+          }
+        },
+        "consequent": {
+          "type": "BlockStatement",
+          "body": [
+            {
+              "type": "ExpressionStatement",
+              "expression": {
+                "type": "CallExpression",
+                "callee": {
+                  "type": "MemberExpression",
+                  "computed": false,
+                  "object": {
+                    "type": "Identifier",
+                    "name": "console"
+                  },
+                  "property": {
+                    "type": "Identifier",
+                    "name": "log"
+                  }
+                },
+                "arguments": [
+                  {
+                    "type": "Literal",
+                    "value": "else",
+                    "raw": "\"else\""
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "alternate": {
+          "type": "IfStatement",
+          "test": {
+            "type": "Literal",
+            "value": true,
+            "raw": "true"
+          },
+          "consequent": {
+            "type": "BlockStatement",
+            "body": [
+              {
+                "type": "ExpressionStatement",
+                "expression": {
                   "type": "CallExpression",
                   "callee": {
                     "type": "MemberExpression",
                     "computed": false,
                     "object": {
                       "type": "Identifier",
-                      "name": "value"
+                      "name": "console"
                     },
                     "property": {
                       "type": "Identifier",
-                      "name": "toString"
+                      "name": "log"
                     }
                   },
-                  "arguments": []
-                },
-                "right": {
-                  "type": "Literal",
-                  "value": ",",
-                  "raw": "\",\""
+                  "arguments": [
+                    {
+                      "type": "Literal",
+                      "value": "yarram\u0131 yi",
+                      "raw": "\"yarram\u0131 yi\""
+                    }
+                  ]
                 }
               }
-            }
-          }
-        ]
-      },
-      "generator": false,
-      "expression": false
+            ]
+          },
+          "alternate": null
+        }
+      }
     },
     {
-      "type": "ExpressionStatement",
-      "expression": {
-        "type": "CallExpression",
-        "callee": {
-          "type": "MemberExpression",
-          "computed": false,
-          "object": {
-            "type": "Identifier",
-            "name": "console"
-          },
-          "property": {
-            "type": "Identifier",
-            "name": "log"
-          }
-        },
-        "arguments": [
-          {
-            "type": "Identifier",
-            "name": "txt"
-          }
-        ]
-      }
+      "type": "EmptyStatement"
     }
   ]
 }

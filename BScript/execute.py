@@ -18,7 +18,11 @@ binary_expressions = {
   "==":lambda x,y: x == y,
   "===": lambda x,y: type(x) is type(y) and x==y,
   "!=":lambda x,y: x != y,
-  "^":lambda x,y: x^y
+  "^":lambda x,y: x^y,
+  ">":lambda x,y: x > y,
+  "<":lambda x,y: x < y,
+  ">=":lambda x,y: x >= y,
+  "<=":lambda x,y: x <= y,
 }
 unary_expressions = {
   "-":lambda x: x*-1,
@@ -105,10 +109,15 @@ class environment(dict):
     return super(environment,self).__getattribute__(name)
   def __add_global__(self,kwargs):
     for name,value in kwargs.items():
+      if name in __globals__ or name in self:
+        raise SyntaxError(f"Identifier '{name}' has already been declared")
+
       __globals__[name] = variable2BS(value)
       
   def __add_const__(self,kwargs):
     for name,value in kwargs.items():
+      if name in self.__constants__ or name in self or name in __globals__:
+        raise SyntaxError(f"Identifier '{name}' has already been declared")
       self[name] = variable2BS(value)
       self.__constants__.add(name)
   def __setattr__(self,name,value):
@@ -246,7 +255,10 @@ class BS_executor(object):
         "ThisExpression":self.ThisExpression,
         "UnaryExpression":self.UnaryExpression,
         "ArrayExpression":self.ArrayExpression,
-        "UpdateExpression":self.UpdateExpression
+        "UpdateExpression":self.UpdateExpression,
+        "LogicalExpression":self.LogicalExpression,
+        "IfStatement":self.IfStatement,
+        "BlockStatement":self.__call__
         }
     def Await(self,func,*args,**kwargs):
       return self.async_loop.run_until_complete(func(*args,**kwargs))
@@ -257,6 +269,7 @@ class BS_executor(object):
       if self.variable_mem_size > self.mem_size:
         raise MemoryError("Sandbox reached its memory limit")
     def variable2BS(self,value):
+      print(value,"hehe")
       if isinstance(value,int):
         return BS_int(value)
       elif isinstance(value,dict):
@@ -294,6 +307,29 @@ class BS_executor(object):
           self.variables[module_as] = importlib.import_module(module)
         else:
           self.variables[module] = importlib.import_module(module)
+    def IfStatement(self,**kwargs):
+      
+      if self.calls[kwargs["test"]["type"]](**kwargs["test"]):
+        self.__call__(kwargs["consequent"],self.terminal)
+      elif kwargs["alternate"]:
+        if kwargs["alternate"]["type"] == "BlockStatement":
+          self.__call__(kwargs["alternate"],self.terminal)
+        else:
+          self.calls[kwargs["alternate"]["type"]](**kwargs["alternate"])
+
+        
+    def LogicalExpression(self,**kwargs):
+      if kwargs["operator"] == "&&":
+        if (result:=self.calls[kwargs["left"]["type"]](**kwargs["left"])):
+          return result and self.calls[kwargs["right"]["type"]](**kwargs["right"])
+        else:
+          return False
+      elif kwargs["operator"] == "||":
+        if (result:=self.calls[kwargs["left"]["type"]](**kwargs["left"])):
+          return True
+        else:
+          return result or self.calls[kwargs["right"]["type"]](**kwargs["right"])
+      # print(kwargs["left"])
     def UpdateExpression(self,**kwargs):
       operator = unary_expressions.get(kwargs["operator"])
       if operator:
@@ -391,7 +427,7 @@ class BS_executor(object):
             func_callable = self.variables[func]
           elif func_callable is not None and isinstance(func,str):
                 
-            func_callable = self.variable2BS(getattr(func_callable, func))
+            func_callable = variable2BS(getattr(func_callable, func))
           elif func_callable is None and not isinstance(func,str):
             func_callable = func
         self.delete(func_callable,child)
@@ -411,7 +447,7 @@ class BS_executor(object):
             func_callable = self.variables[func]
           elif func_callable is not None and isinstance(func,str):
                 
-            func_callable = self.variable2BS(getattr(func_callable, func))
+            func_callable = variable2BS(getattr(func_callable, func))
           elif func_callable is None and not isinstance(func,str):
             func_callable = func
           
@@ -432,7 +468,7 @@ class BS_executor(object):
             if isinstance(flatten_expressions[0], BS_object):
               return flatten_expressions[0][flatten_expressions[1]]
               
-            return self.variable2BS(self.variables[flatten_expressions[0]][flatten_expressions[1]])
+            return variable2BS(self.variables[flatten_expressions[0]][flatten_expressions[1]])
           except IndexError:
             return self.variables["undefined"]
       
@@ -448,7 +484,7 @@ class BS_executor(object):
               
             elif func_callable is not None and isinstance(func,str):
               # FIX
-              func_callable = self.variable2BS(getattr(func_callable, func))
+              func_callable = variable2BS(getattr(func_callable, func))
             elif func_callable is None and not isinstance(func,str):
               func_callable = func
           return func_callable
@@ -500,7 +536,7 @@ class BS_executor(object):
             
           else:
             if not args_lock:
-              args.append(self.variable2BS(value))
+              args.append(variable2BS(value))
             else:
               raise SyntaxError("positional argument follows keyword argument")
         else:

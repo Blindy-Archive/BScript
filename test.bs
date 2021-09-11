@@ -1,4 +1,4 @@
-
+numbers = 12
 const numbers = [45, 4, 9, 16, 25];
 let txt = "a";
 numbers.forEach(myFunction);

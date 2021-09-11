@@ -11,14 +11,19 @@ undefined = type("undefined",(),{
 "__setattribute__":lambda self,name,value: raise_exception(TypeError("Cannot set property '{name}' of undefined")),
 "__getattribute__":lambda self,name:  raise_exception(TypeError(f"Cannot read property '{name}' of undefined")) if name != "__class__" else undefined
 })
+
 def variable2BS(value):
-      if isinstance(value,int):
+      if isinstance(value,bool):
+        return bool(value)
+      elif isinstance(value,int):
         return BS_int(value)
       elif isinstance(value,dict):
         return BS_object(value)
       elif isinstance(value,str):
         return BS_string(value)
+      
       return value
+      
 class AssignableObject():
   def __init__(self,obj,attr):
     self.obj = obj
@@ -103,10 +108,14 @@ class BS_object(dict):
       raise Exception("")
   
 NoneType = type(None)
+
+class BS_int(int):
+  def toString(self):
+    return BS_string(self.__str__())
 slicer = {
-(NoneType,int):lambda obj,x,y: obj[:y],
-(int,NoneType):lambda obj,x,y: obj[x:],
-(int,int):lambda obj,x,y: obj[x:y]
+(NoneType,BS_int):lambda obj,x,y: obj[:y],
+(BS_int,NoneType):lambda obj,x,y: obj[x:],
+(BS_int,BS_int):lambda obj,x,y: obj[x:y]
 
 }
 class BS_string(str):
@@ -180,6 +189,7 @@ class BS_array(list):
     return new_list
   def slice(self, start=None,end=None):
     t = (type(start),type(end))
+    print(t,slicer)
     return slicer.get(t)(self,start,end)
   def toString(self):
     return BS_string(",".join(self))
@@ -196,7 +206,20 @@ class BS_array(list):
       temp_kwargs = {"index":variable2BS(index),"value":variable2BS(value),"array":self}
       
       function(**{k:temp_kwargs[k] for k in function.args})
-class BS_int(int):
-  def toString(self):
-    return BS_string(self.__str__())
-    
+  def map(self,function):
+    new_array = BS_array()
+    for index,value in enumerate(self):
+      temp_kwargs = {"index":variable2BS(index),"value":variable2BS(value),"array":self}
+      
+      new_array.append(variable2BS(function(**{k:temp_kwargs[k] for k in function.args})))
+    return new_array
+      
+  def filter(self,function):
+    new_array = BS_array()
+    for index,value in enumerate(self):
+      temp_kwargs = {"index":variable2BS(index),"value":variable2BS(value),"array":self}
+      if variable2BS(function(**{k:temp_kwargs[k] for k in function.args})):
+      
+        new_array.append(value)
+    return new_array
+

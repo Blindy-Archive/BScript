@@ -77,17 +77,33 @@ cars.sort(function(x){return x.year})
 tester.assertion(cars==[{type:"Saab", year:2001},{type:"BMW", year:2010},{type:"Volvo", year:2016}])
 
 
-const numbers = [45, 4, 9, 16, 25];
+let numbers = [45, 4, 9, 16, 25];
 let txt = "";
 numbers.forEach(myFunction);
 
 function myFunction(value) {
-  console.log(value);
-  //txt += value.toString() + "<br>";
+  txt += value.toString() + ",";
 }
 
+tester.assertion(txt=="45,4,9,16,25,")
 
 
+let numbers1 = [45, 4, 9, 16, 25];
+let numbers2 = numbers1.map(map_test);
+
+function map_test(value, index, array) {
+  return value * 2;
+}
+
+tester.assertion(numbers2 == [90, 8, 18, 32, 50])
+
+let numbers = [45, 4, 9, 16, 25];
+let over18 = numbers.filter(filterer);
+
+function filterer(value, index, array) {
+  return value > 18;
+}
+tester.assertion(over18 == [45,25])
 
 
 
