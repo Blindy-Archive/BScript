@@ -23,12 +23,14 @@ binary_expressions = {
   "<":lambda x,y: x < y,
   ">=":lambda x,y: x >= y,
   "<=":lambda x,y: x <= y,
+  "in":lambda x,y: x in y,
 }
 unary_expressions = {
   "-":lambda x: x*-1,
   "delete":lambda x: x,
   "--":lambda x: x-1,
-  "++":lambda x: x+1
+  "++":lambda x: x+1,
+  "!":lambda x: not x
 }
 assignment_expressions = {
   "*=":lambda x,y: x * y,
@@ -50,7 +52,7 @@ __reserveds__ = set(dict().__class__.__dict__.keys())
 __reserveds__.add("__reserveds__")
 
 __reserveds__.add("__private__")
-__private__ = __reserveds__.copy()^{"clear","copy","fromkeys","get","items","keys","pop","popitem","setdefault","update","values"}
+__private__ = __reserveds__.copy()^{"clear","copy","fromkeys","get","items","keys","pop","popitem","setdefault","update","values","__delitem__"}
 
 __reserved__keys__ = {"this","undefined","Infinity"}
 __reserveds__.add("__private__")
@@ -90,8 +92,15 @@ class environment(dict):
     if key in self.__globals__:
       return self.__globals__.get(key)
     return super(environment,self).get(key,default)
+  def __delitem__(self,key):
+    if dict.__contains__(self,key):
+      self.pop(key)
+      if key in self.__constants__:
+        self.__constants__.remove(key)
+    elif key in __globals__:
+      __globals__.pop(key)
   def __contains__(self, key):
-    return dict.__contains__(self,key) or dict.__contains__(__globals__,key)
+    return dict.__contains__(self,key) or dict.__contains__(__globals__,key) 
   def __setitem__(self,key,value):
     if key in __reserved__keys__:
       raise ValueError(f"'{key}' cannot be set due to its protection level")
@@ -214,7 +223,7 @@ class BS_async_function(BS_function):
     def get_as_async():
       pass
 class BS_executor(object):
-    def __init__(self,env_name="__main__",variables={},sandbox_mode=True,__importables__=__importables__,mem_size=8000,parent=None):
+    def __init__(self,env_name="__main__",variables={},sandbox_mode=True,__importables__=__importables__,mem_size=8000,parent=None,max_loop=500):
         original = {"p_import":self.p_import,
         "async":self.Async,
         "await":self.Await,
@@ -231,7 +240,7 @@ class BS_executor(object):
         self.__importables__ = __importables__
         variables.update(original)
         self.variables = variables if isinstance(variables, environment) else environment(variables) 
-        
+        self.max_loop = max_loop
         # if env_name != "__main__":
         #   print(env_name)
         #   print(self.variables.__globals__)
@@ -258,7 +267,8 @@ class BS_executor(object):
         "UpdateExpression":self.UpdateExpression,
         "LogicalExpression":self.LogicalExpression,
         "IfStatement":self.IfStatement,
-        "BlockStatement":self.__call__
+        "BlockStatement":self.__call__,
+        "ForStatement":self.ForStatement
         }
     def Await(self,func,*args,**kwargs):
       return self.async_loop.run_until_complete(func(*args,**kwargs))
@@ -269,7 +279,6 @@ class BS_executor(object):
       if self.variable_mem_size > self.mem_size:
         raise MemoryError("Sandbox reached its memory limit")
     def variable2BS(self,value):
-      print(value,"hehe")
       if isinstance(value,int):
         return BS_int(value)
       elif isinstance(value,dict):
@@ -307,6 +316,20 @@ class BS_executor(object):
           self.variables[module_as] = importlib.import_module(module)
         else:
           self.variables[module] = importlib.import_module(module)
+    def ForStatement(self,**kwargs):
+      init = self.calls[kwargs["init"]["type"]](**kwargs["init"])
+      delete = None
+      if kwargs["init"]["type"] == "VariableDeclaration":
+        delete = kwargs["init"]["declarations"][0]["id"]["name"] 
+      loop = 0
+      while self.calls[kwargs["test"]["type"]](**kwargs["test"]) and loop<=self.max_loop:
+        self.__call__(kwargs["body"],self.terminal)
+        self.calls[kwargs["update"]["type"]](**kwargs["update"])
+        loop+=1
+      if loop>=self.max_loop:
+        raise Exception("System reached maximum loop limit")
+      elif delete:
+        self.variables.__delitem__(delete)
     def IfStatement(self,**kwargs):
       
       if self.calls[kwargs["test"]["type"]](**kwargs["test"]):
@@ -468,7 +491,7 @@ class BS_executor(object):
             if isinstance(flatten_expressions[0], BS_object):
               return flatten_expressions[0][flatten_expressions[1]]
               
-            return variable2BS(self.variables[flatten_expressions[0]][flatten_expressions[1]])
+            return variable2BS(self.variables[flatten_expressions[0]][self.calls[kwargs["property"]["type"]](assignment=True,**kwargs["property"])])
           except IndexError:
             return self.variables["undefined"]
       
