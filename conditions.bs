@@ -1,10 +1,11 @@
 const cars = ["BMW", "Volvo", "Saab", "Ford", "Fiat", "Audi"];
 
 let text = "";
-for (let i = 1; i < 499; i++) {
+for (let i = 0; i < 3; i++) {
   text += i.toString();
 }
-for (let i = 1; i < 499; i++) {
+for (let i = 0; i < 3; i++) {
+  continue;
   text += i.toString();
 }
 console.log(text);

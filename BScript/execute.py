@@ -323,9 +323,13 @@ class BS_executor(object):
         delete = kwargs["init"]["declarations"][0]["id"]["name"] 
       loop = 0
       while self.calls[kwargs["test"]["type"]](**kwargs["test"]) and loop<=self.max_loop:
-        self.__call__(kwargs["body"],self.terminal)
+        state = self.__call__(kwargs["body"],self.terminal)
         self.calls[kwargs["update"]["type"]](**kwargs["update"])
         loop+=1
+        if state is BS_break:
+          break
+        elif state is BS_continue:
+          continue
       if loop>=self.max_loop:
         raise Exception("System reached maximum loop limit")
       elif delete:
@@ -635,7 +639,11 @@ class BS_executor(object):
           
         if body_type == "ReturnStatement":
           return self.ReturnStatement(**body) 
-        if (func:=self.calls.get(body_type)) :
+        elif body_type == "BreakStatement":
+          return BS_break
+        elif body_type == "ContinueStatement":
+          return BS_continue
+        elif (func:=self.calls.get(body_type)) :
           return_val = func(**body)
           # if body_type == "ExpressionStatement" and isinstance(return_val,dict):
           #   self.variables.update(return_val)

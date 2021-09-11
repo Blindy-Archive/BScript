@@ -23,7 +23,6 @@ def variable2BS(value):
         return BS_string(value)
       
       return value
-      
 class AssignableObject():
   def __init__(self,obj,attr):
     self.obj = obj
@@ -223,3 +222,5 @@ class BS_array(list):
         new_array.append(value)
     return new_array
 
+class BS_break: pass
+class BS_continue: pass
