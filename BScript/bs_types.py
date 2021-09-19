@@ -188,12 +188,10 @@ class BS_array(list):
     return new_list
   def slice(self, start=None,end=None):
     t = (type(start),type(end))
-    print(t,slicer)
     return slicer.get(t)(self,start,end)
   def toString(self):
     return BS_string(",".join(self))
   def sort(self,key=lambda x:x,reverse=False):
-    
     super(BS_array, self).sort(key=key,reverse=reverse)
   def min(self):
     return variable2BS(min(self))

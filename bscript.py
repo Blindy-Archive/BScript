@@ -59,9 +59,10 @@ variables = {
     "dict":dict,
     "print":print,
     "random":random,
+    "json":json
 }
 
-executor = execute.BS_executor(variables=variables, sandbox_mode=False)
+executor = execute.BS_executor(variables=variables, sandbox_mode=False,use_reserved=True)
 
 
 def find_start_curly_brackets(terminal_input):

@@ -1,10 +1,15 @@
-numbers = 12
-const numbers = [45, 4, 9, 16, 25];
-let txt = "a";
+let numbers = [45, 4, 9, 16, 25];
+var txt = "";
 numbers.forEach(myFunction);
 
 function myFunction(value) {
-  txt += value.toString()+",";
-  
+  txt += value.toString() + ",";
 }
-console.log(txt)
+
+let cars = [
+  {type:"Volvo", year:2016},
+  {type:"Saab", year:2001},
+  {type:"BMW", year:2010}
+];
+cars.sort(function(x){return x.year})
+console.log(cars)
