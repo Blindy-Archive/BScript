@@ -1,0 +1,63 @@
+const OPTIONS = {
+    "1️⃣": 0,
+    "2️⃣": 1,
+    "3️⃣": 2,
+    "4️⃣": 3,
+    "5️⃣": 4,
+}
+
+function create_pie(labels,data){
+    
+    let text = format("https://quickchart.io/chart?c={type:'pie',data:{labels:{labels.toString()},datasets:[{label:'Users',data:{data.toString()}}]}}",labels=labels,data=data);
+    return text;
+}
+
+function create_pool(ctx,labels){
+  let options = {}
+  let pool = {}
+  labels = Array(labels)
+  await(ctx.send(type(pool)))
+  function forer(value){
+    Object.__setitem__(pool,value,1)
+    await(ctx.send(pool))
+
+  }
+  labels.forEach(forer)
+  
+  let limit = labels.length
+  let x = 0
+  Array(OPTIONS.keys()).forEach(function(value){
+    if(x!==limit){
+          options[value] = labels[x]
+          
+    }
+    x++;
+    
+  })
+  let chart_message = await(ctx.send(create_pie(pool.keys(),pool.values())))
+  function wait_vote(reaction,user){
+    if (reaction.message.id===chart_message.id && !(user.bot)){
+      if (reaction.emoji == "❌"){
+        return true;
+      }
+      else if( opt = options.get(reaction.emoji)){
+        reaction.message.reactions.forEach(function(value){
+          pool[opt] = value.count;
+        })
+        loop.create_task(chart_message.edit(create_pie(pool.keys(),pool.values())))
+        
+      }
+      else{
+        loop.create_task(chart_message.remove_reaction(reaction.emoji,user))
+      }
+    }
+    
+  }
+  options.forEach(function(value){
+    await(chart_message.add_reaction(opt))
+  })
+  await(chart_message.add_reaction("❌"))
+  result = await(loop.wait_for('reaction_add',check=wait_vote))
+  await(chart_message.clear_reaction())
+}
+Exports.export_functions({'chart':create_pool})

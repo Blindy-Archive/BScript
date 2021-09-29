@@ -1,14 +1,7 @@
-# import js2py
-# esprima = js2py.require("esprima@4.0.1")
-# from pyjsparser import parse
-
-# with open("test.bs","r",encoding="utf8") as f:
-#   read = f.read()
-#   print(esprima.parse(read))
-a = [1,2,3,4]
-b = [3,5,6]
-c = [96,643,321]
-i = 3
-d = None # None
-if d is not None or (name:=d["name"]):
-  print(name)
+from BScript_lite import Compiler
+async def test(text):
+  print(text)
+with open("test.js","r",encoding="utf-8") as f:
+    
+  compiled = Compiler(f.read(),{"tester":test})()
+  compiled.exporter.events["on_message"]("hello world")

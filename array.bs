@@ -1,5 +1,5 @@
-p_import("BScript.unit_test","unit_test")
-tester = unit_test.test()
+const unit_test = p_import("BScript.unit_test")
+const tester = unit_test.test(true)
 
 // Test Case 0
 let fruits = ["Banana", "Orange", "Apple", "Mango"];
@@ -82,9 +82,9 @@ let txt = "";
 numbers.forEach(myFunction);
 
 function myFunction(value) {
+
   txt += value.toString() + ",";
 }
-
 tester.assertion(txt=="45,4,9,16,25,")
 
 

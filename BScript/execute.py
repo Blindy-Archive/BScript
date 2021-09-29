@@ -7,6 +7,10 @@ from BScript import exceptions
 import sys,asyncio
 from BScript.bs_types import *
 import BScript.reserved_functions as rf
+import BSlib
+import nest_asyncio
+nest_asyncio.apply()
+
 string_indicators = {
 '"',
 "'"
@@ -58,6 +62,60 @@ __private__ = __reserveds__.copy()^{"clear","copy","fromkeys","get","items","key
 __reserved__keys__ = {"this","undefined","Infinity"}
 __reserveds__.add("__private__")
 __protected__ = {"__class__"}
+class scope:
+  parent_scope = None
+  child = False
+
+  def __init__(self,*args,**kwargs):
+    self.variables = {}
+    self.constants = set()
+    self.variables.update(kwargs)
+  def get_variable(self,name):
+    if name in self.variables:
+      return self.variables[name]
+    elif self.child and (value:=self.parent_scope.get_variable(name)) is not None:
+
+      return value
+    else:
+      raise NameError(f"name '{name}' is not defined")
+
+  def check_constant(self,name):
+    if name in self.constants:
+      return True
+    elif self.child and (value:=self.parent_scope.check_constant(name)):
+      return value
+    else:
+      return False
+  def has_variable(self,name):
+    if name in self.variables:
+      return self
+    elif self.child:
+      return self.parent_scope.has_variable(name)
+    else:
+      return self
+      
+  def create_variable(self,kind,name,value=undefined):
+    if self.check_constant(name):
+      raise TypeError("Assignment to constant variable.")
+    if kind == "const":
+      self.constants.add(name)
+      self.variables[name] = value
+
+    elif kind == "var":
+      self.variables[name] = value
+    elif kind == "let":
+      self.variables[name] = value
+  def unsafe_set_variables(self,kwargs):
+    self.variables.update(kwargs)
+  def unsafe_set_variable(self, name, value):
+    if self.check_constant(name):
+      raise TypeError("Assignment to constant variable.")
+    self.variables[name] = value
+  def set_variable_value(self, name, value):
+    if self.check_constant(name):
+      raise TypeError("Assignment to constant variable.")
+    self.has_variable(name).variables[name] = value
+    
 
 class environment(dict):
   
@@ -133,13 +191,15 @@ class environment(dict):
       
   def __add_const__(self,kwargs):
     for name,value in kwargs.items():
+
       if name in self.__constants__ or name in self:
+        print(name in self)
         raise SyntaxError(f"Identifier '{name}' has already been declared")
-      self.__constants__.add(name)
       if self.__temporary__:
         self.__temporaries__[name] = value
       else:
         self[name] = variable2BS(value)
+      self.__constants__.add(name)
 
   def __setattr__(self,name,value):
     if name in __reserveds__ or name in __private__:
@@ -172,29 +232,31 @@ class BS_function(object):
     def __difference__dict__(self,first,other):
       return {k:v   for k,v in first.items() if  k not in other}
     def __call__(self,*args,**kwargs):
-      
-      variables = environment()
-      
-      variables.update(self.variables)
+      variables = scope()
+            
+      variables.unsafe_set_variables(self.variables)
       k_words = {k:v for k,v in zip(self.kwargs[:abs(self.args_len - len(args))],args[abs(self.args_len - len(args)):])}
       self_args = [arg for arg in self.args if arg not in kwargs.keys()]
       value = { k : kwargs[k]  for k in set(kwargs) - set(k_words) if k in self.args  }
       kwargs = self.__difference__dict__(kwargs,value)
-      variables.update(value)
+      variables.unsafe_set_variables(value)
       args_len = len(self_args) 
       args = args[:args_len]
-      variables.update(k_words)
+      variables.unsafe_set_variables(k_words)
       args_length = len(args)
       if args_length < args_len:
         raise TypeError(f"{self.__name__}() missing {args_len -args_length} required positional argument: {'and'.join(self.args[args_len - args_length:])}")
       for x,y in zip(self.args,args):
-        variables[x] = y
+        variables.unsafe_set_variable(x,y)
 
       for k, (k2,v2) in zip(self.kwargs,kwargs.items()):
         if k2 not in self.kwargs:
           raise TypeError(f"{self.__name__}() got an unexpected keyword argument: {k2}")
         else:
-          variables[k] = v2
+          variables.unsafe_set_variable(k,v2)
+      variables.child = True
+      variables.parent_scope = self.executor.scope
+      return BS_executor(self.get_env_name(),variables,sandbox_mode=self.executor.sandbox_mode)(self.body,terminal=self.executor.terminal,env_name=self.get_env_name())
       return self.executor(self.body,temporary=True,env_name=self.get_env_name(),env=variables)
     def get_env_name(self):
       return self.executor.env_name+"."+getattr(self,"__name__")
@@ -214,30 +276,61 @@ class BS_async_function(BS_function):
       return self.get_env_name()
     def get_as_async():
       pass
+      
+class Exports:
+  events = {}
+  commands = {}
+  available_events = {"on_reaction_add","on_reaction_remove","on_message"}
+  def export_events(self,__m:dict):
+    for k,v in __m.items():
+      if k not in self.available_events:
+        raise TypeError(f"This {k} is not available yet")
+      if not isinstance(v,(BS_function,BS_async_function)):
+        raise TypeError(f"Only allowed function types in exports")
+      self.events[k] = v
+  def export_event(self,event,function):
+    if event not in self.available_events:
+      raise TypeError(f"This {k} is not available yet")
+    if not isinstance(function,(BS_function,BS_async_function)):
+      raise TypeError(f"Only allowed function types in exports")
+    self.events[event] = function
+  def export_functions(self,__m:dict):
+     for k,v in __m.items():
+        if not isinstance(v,(BS_function,BS_async_function)):
+          raise TypeError(f"Only allowed function types in exports")
+        self.commands[k] = v
 class BS_executor(object):
-    def __init__(self,env_name="__main__",variables={},sandbox_mode=True,__importables__=__importables__,mem_size=8000,parent=None,max_loop=500,use_reserved=False):
-        original = {"p_import":self.p_import,
-        "async":self.Async,
-        "await":self.Await,
-        "Object":BS_object,
-        "Object_get":lambda obj,key: dict.get(obj,key),
-        "Object_set":lambda obj,key,value: dict.__setitem__(obj,key,value),
-        "undefined":undefined()
-        }
-        if not sandbox_mode:
-          original.update({"__main__":self})
+    def __init__(self,env_name="__main__",scope=scope(),sandbox_mode=True,__importables__=__importables__,mem_size=8000,parent=None,max_loop=500,use_reserved=False,variables={}):
+        self.exports = Exports()
+        self.scope = scope
+        if not self.scope.child:
+          original = {"p_import":self.p_import,
+          "async":self.Async,
+          "await":self.Await,
+          "Object":BS_object,
+          "Object_get":lambda obj,key: dict.get(obj,key),
+          "Object_set":lambda obj,key,value: dict.__setitem__(obj,key,value),
+          "undefined":undefined(),
+          "Exports":self.exports,
+          "bimport":self.bimport,
+          "Number":BS_int,
+          "String":BS_string,
+          "Array":BS_array
+          }
+          self.scope.unsafe_set_variables(original)
+          self.scope.unsafe_set_variables(variables)
+          
+          if not sandbox_mode:
+            self.scope.unsafe_set_variable("__main__",self)
         self.mem_size = mem_size
         self.variable_mem_size = 0
         self.env_name = env_name
         self.parent = parent
         self.sandbox_mode = sandbox_mode
         self.__importables__ = __importables__
-        variables.update(original)
-        self.variables = variables if isinstance(variables, environment) else environment(variables) 
         self.max_loop = max_loop
         self.reserved_functions = rf.exports
         self.use_reserved = use_reserved
-        self.variables.update(self.reserved_functions)
         # if env_name != "__main__":
         #   print(env_name)
         #   print(self.variables.self.__globals__)
@@ -267,9 +360,16 @@ class BS_executor(object):
         "BlockStatement":self.__call__,
         "ForStatement":self.ForStatement
         }
+    def bimport(self,library):
+      
+      if library in BSlib.__modules__:
+        return BSlib.__modules__[library] 
+      else:
+        raise exceptions.UndefinedBSlibModuleException(f"BSlib doesn't have a module named as '{library}'")
     def Await(self,func):
+      
       return self.async_loop.run_until_complete(func)
-    def Async(self,func: BS_function) -> BS_async_function:
+    def Async(self,func: BS_function):
       return func.get_as_async()
     def variable2mem(self,variable):
       pass
@@ -300,35 +400,30 @@ class BS_executor(object):
         
         raise TypeError(f"{raw} value is not supported by BScript")
     def p_import(self,module,module_as=None):
+      if self.scope.child:
+        raise exceptions.ScopeException("Can only import in global scope")
       if self.sandbox_mode:
         if module in self.__importables__:
-          
-          self.variables.update({module_as if module_as else module:__importables__[module]})
-          self.variable2mem(module)
+          return __importables__[module]
         else:
           raise exceptions.SandBoxPrivilegesException(f"Sandbox doesn't have required privileges to import '{module}' module") 
       else:
-        if module_as:
           
-          self.variables[module_as] = importlib.import_module(module)
-        else:
-          self.variables[module] = importlib.import_module(module)
+        return importlib.import_module(module)
     def ForStatement(self,**kwargs):
-      delete = None
-      self.variables.__temporary__ = True
+      self.calls[kwargs["init"]["type"]](**kwargs["init"])
+      
       loop = 0
-      while self.calls[kwargs["test"]["type"]](**kwargs["test"]) and loop<=self.max_loop:
-        state = self.__call__(kwargs["body"],self.terminal)
+      while self.calls[kwargs["test"]["type"]](**kwargs["test"]) :
+        state = self.__call__(kwargs["body"],self.terminal,temporary=True)
         self.calls[kwargs["update"]["type"]](**kwargs["update"])
         loop+=1
         if state is BS_break:
           break
         elif state is BS_continue:
           continue
-      if loop>=self.max_loop:
-        raise Exception("System reached maximum loop limit")
-      else:
-        self.finish_temporary()
+        if loop>=self.max_loop:
+          raise Exception("System reached maximum loop limit")
     def IfStatement(self,**kwargs):
       
       if self.calls[kwargs["test"]["type"]](**kwargs["test"]):
@@ -358,7 +453,7 @@ class BS_executor(object):
         if kwargs["argument"]["type"] == "Identifier":
           variable = self.Identifier(**kwargs["argument"])
           value = self.Identifier(assignment=True,**kwargs["argument"])
-          self.variables[variable] = operator(value)
+          self.scope.set_variable_value(variable, operator(value))
         else:
           kwargs["argument"]["computed"] = True
           assignable_object = self.calls[kwargs["argument"]["type"]](as_variable=True,**kwargs["argument"])
@@ -397,38 +492,32 @@ class BS_executor(object):
         raise exceptions.UnsupportedOperationException(f"'{kwargs['operator']}' operator is not supported by BScript")
     def Identifier(self,**kwargs):
       if kwargs.get("delete",False):
+        # TODO: Add delete function in scope
         self.delete(self.variables,kwargs["name"])
       elif kwargs.get("assignment"):
         
-        if kwargs["name"] in self.variables:
-          return self.variables[kwargs["name"]]
-        else:
-          raise NameError(f"name '{kwargs['name']}' is not defined")
+        return self.scope.get_variable(kwargs["name"])
       
       else:
         return kwargs["name"]
     def VariableDeclaration(self,**kwargs):
-      skwargs = {}
       kind = kwargs["kind"]
       for declaration in kwargs["declarations"]:
         name = self.calls[declaration["id"]["type"]](**declaration["id"])
         value = self.calls[declaration["init"]["type"]](assignment=True,**declaration["init"]) if declaration["init"] else None
         
-        skwargs[name] = value
-      if kind == "const":
-        self.variables.__add_const__(skwargs)
-      elif kind == "let":
-        self.variables.__add_global__(skwargs)
-      else:
-        self.variables.update(skwargs)
+        self.scope.create_variable(kind,name,value)
     def ThisExpression(self,**kwargs):
       if self.parent:
         return self.parent
       else:
         raise exceptions.ThisExpressionException("this expression cannot be used outside of an object")
     def delete(self,parent,child):
-      if isinstance(parent,(list,environment,BS_object)):
-        parent[child] = self.variables["undefined"]
+      if isinstance(parent,(list,BS_object)):
+        parent[child] = self.scope.get_variable("undefined")
+      elif isinstance(parent,scope):
+        
+        pass
       else:
         raise TypeError(f"BScript delete method doesn't support '{type(parent)}'")
     def MemberExpression(self,**kwargs):
@@ -446,7 +535,7 @@ class BS_executor(object):
           if func_callable is None and isinstance(func,BS_string):
             func_callable = func
           elif func_callable is None and isinstance(func,str):
-            func_callable = self.variables[func]
+            func_callable = self.scope.get_variable(func)
           elif func_callable is not None and isinstance(func,str):
                 
             func_callable = variable2BS(getattr(func_callable, func))
@@ -466,7 +555,7 @@ class BS_executor(object):
           if func_callable is None and isinstance(func,BS_string):
             func_callable = func
           elif func_callable is None and isinstance(func,str):
-            func_callable = self.variables[func]
+            func_callable = self.scope.get_variable(func)
           elif func_callable is not None and isinstance(func,str):
                 
             func_callable = variable2BS(getattr(func_callable, func))
@@ -483,16 +572,16 @@ class BS_executor(object):
       if kwargs["computed"]:
         flatten_expressions = flatten(expressions)
         if kwargs.get("as_variable",False):
-          return AssignableObject(self.variables[flatten_expressions[0]],flatten_expressions[1])
+          return AssignableObject(self.scope.get_variable(flatten_expressions[0]),flatten_expressions[1])
         
         else:
           try:
             if isinstance(flatten_expressions[0], BS_object):
               return flatten_expressions[0][flatten_expressions[1]]
               
-            return variable2BS(self.variables[flatten_expressions[0]][self.calls[kwargs["property"]["type"]](assignment=True,**kwargs["property"])])
+            return variable2BS(self.scope.get_variable(flatten_expressions[0])[self.calls[kwargs["property"]["type"]](assignment=True,**kwargs["property"])])
           except IndexError:
-            return self.variables["undefined"]
+            return self.scope.get_variable("undefined")
       
       elif kwargs["property"]["type"] == "Identifier":
         func_callable = None
@@ -502,7 +591,7 @@ class BS_executor(object):
             if func_callable is None and isinstance(func,BS_string):
               func_callable = func
             elif func_callable is None and isinstance(func,str):
-              func_callable = self.variables[func]
+              func_callable = self.scope.get_variable(func)
               
             elif func_callable is not None and isinstance(func,str):
               # FIX
@@ -525,16 +614,16 @@ class BS_executor(object):
           variable(value)
           return value
         elif not kwargs.get("func_caller",False):
-          self.variables[variable] = value
+          self.scope.set_variable_value(variable,value)
         
         
         return value
       elif (expression:=assignment_expressions.get(kwargs["operator"])):
         variable = self.calls[kwargs["left"]["type"]](**kwargs["left"])
         value = self.calls[kwargs["right"]["type"]](assignment=True,**kwargs["right"])
-        result = expression(self.variables[variable],value)
-        self.variables[variable] = result
-        self.variable2mem(variable)
+        result = expression(self.scope.get_variable(variable),value)
+        self.scope.set_variable_value(variable,result)
+        # TODO: Test here
         return {variable:result}
 
       else:
@@ -573,14 +662,14 @@ class BS_executor(object):
         funcs = flatten(funcs)
         for func in funcs:
           if func_callable is None and isinstance(func,str):
-            func_callable = self.variables[func]
+            func_callable = self.scope.get_variable(func)
           elif func_callable is not None and isinstance(func,str):
             func_callable = getattr(func_callable, func)
           elif func_callable is None and not isinstance(func,str):
             func_callable = func
       
       elif isinstance(funcs,str):
-        func_callable = self.variables[funcs]
+        func_callable = self.scope.get_variable(funcs)
       else:
         func_callable = funcs
       if (isinstance((result:=func_callable(*args,**k_args)),dict)): 
@@ -605,7 +694,7 @@ class BS_executor(object):
       if self.use_reserved and kwargs["id"]["name"] in self.reserved_functions:
         pass
       else:
-        self.variables[kwargs["id"]["name"]] = BS_function(kwargs,executor=self)
+        self.scope.create_variable("var",kwargs["id"]["name"],BS_function(kwargs,executor=self))
     def ReturnStatement(self,**kwargs):
       """
       {
@@ -619,19 +708,10 @@ class BS_executor(object):
       args,k_args = self.ArgumentParser(kwargs["argument"])
       args.extend(k_args.values())
       return args[0]
-    def finish_temporary(self):
-      self.variables.__temporary__ = False
-      for key in self.variables.__temporaries__.copy():
-        if key in self.variables.__constants__:
-          self.variables.__constants__.remove(key)
-        
-      
-      self.variables.__temporaries__ = {}
+    
     
     def __call__(self,script,terminal=False,temporary=False,env_name=None,env={}):
       self.env_name = env_name if env_name else self.env_name 
-      self.variables.__temporary__ = temporary
-      self.variables.update(env)
       self.terminal = terminal
       if not self.terminal:
         for index,body in enumerate(script["body"]):
@@ -647,7 +727,6 @@ class BS_executor(object):
           
         if body_type == "ReturnStatement":
           return_val = self.ReturnStatement(**body) 
-          self.finish_temporary()
           return return_val
         elif body_type == "BreakStatement":
           return BS_break
@@ -657,4 +736,3 @@ class BS_executor(object):
           return_val = func(**body)
           # if body_type == "ExpressionStatement" and isinstance(return_val,dict):
           #   self.variables.update(return_val)
-      self.finish_temporary()

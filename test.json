@@ -2,53 +2,66 @@
   "type": "Program",
   "body": [
     {
-      "type": "ExpressionStatement",
-      "expression": {
-        "type": "CallExpression",
-        "callee": {
-          "type": "Identifier",
-          "name": "p_import"
-        },
-        "arguments": [
-          {
-            "type": "Literal",
-            "value": "BScript.unit_test",
-            "raw": "\"BScript.unit_test\""
+      "type": "VariableDeclaration",
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "id": {
+            "type": "Identifier",
+            "name": "unit_test"
           },
-          {
-            "type": "Literal",
-            "value": "unit_test",
-            "raw": "\"unit_test\""
+          "init": {
+            "type": "CallExpression",
+            "callee": {
+              "type": "Identifier",
+              "name": "p_import"
+            },
+            "arguments": [
+              {
+                "type": "Literal",
+                "value": "BScript.unit_test",
+                "raw": "\"BScript.unit_test\""
+              }
+            ]
           }
-        ]
-      }
+        }
+      ],
+      "kind": "const"
     },
     {
-      "type": "ExpressionStatement",
-      "expression": {
-        "type": "AssignmentExpression",
-        "operator": "=",
-        "left": {
-          "type": "Identifier",
-          "name": "tester"
-        },
-        "right": {
-          "type": "CallExpression",
-          "callee": {
-            "type": "MemberExpression",
-            "computed": false,
-            "object": {
-              "type": "Identifier",
-              "name": "unit_test"
-            },
-            "property": {
-              "type": "Identifier",
-              "name": "test"
-            }
+      "type": "VariableDeclaration",
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "id": {
+            "type": "Identifier",
+            "name": "tester"
           },
-          "arguments": []
+          "init": {
+            "type": "CallExpression",
+            "callee": {
+              "type": "MemberExpression",
+              "computed": false,
+              "object": {
+                "type": "Identifier",
+                "name": "unit_test"
+              },
+              "property": {
+                "type": "Identifier",
+                "name": "test"
+              }
+            },
+            "arguments": [
+              {
+                "type": "Literal",
+                "value": true,
+                "raw": "true"
+              }
+            ]
+          }
         }
-      }
+      ],
+      "kind": "const"
     },
     {
       "type": "VariableDeclaration",
@@ -1942,30 +1955,6 @@
         }
       ],
       "kind": "let"
-    },
-    {
-      "type": "ExpressionStatement",
-      "expression": {
-        "type": "CallExpression",
-        "callee": {
-          "type": "MemberExpression",
-          "computed": false,
-          "object": {
-            "type": "Identifier",
-            "name": "console"
-          },
-          "property": {
-            "type": "Identifier",
-            "name": "log"
-          }
-        },
-        "arguments": [
-          {
-            "type": "Identifier",
-            "name": "x"
-          }
-        ]
-      }
     },
     {
       "type": "ExpressionStatement",

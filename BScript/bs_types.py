@@ -21,7 +21,10 @@ def variable2BS(value):
         return BS_object(value)
       elif isinstance(value,str):
         return BS_string(value)
-      
+      elif isinstance(value,tuple):
+        return BS_array(value)
+      elif isinstance(value,list):
+        return BS_array(value)
       return value
 class AssignableObject():
   def __init__(self,obj,attr):

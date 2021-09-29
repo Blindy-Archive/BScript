@@ -128,7 +128,6 @@ def main(filename=None, lang="en"):
                 json.dump(parse(read), j, indent=2)
 
         executor(parse(read))
-
         # print(executor.variables.__globals__)
     else:
         terminal()

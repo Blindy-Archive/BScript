@@ -20,3 +20,12 @@ class ThisExpressionException(BaseException):
   """
   Raise: when this expression used in outside of object
   """
+class UndefinedBSlibModuleException(BaseException):
+  """
+  Raise: when bimport tries to import a module from BSlib that is not exists
+  """
+
+class ScopeException(BaseException):
+  """
+  Raise: when an exception is raised related to scope
+  """
