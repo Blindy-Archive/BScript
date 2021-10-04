@@ -62,7 +62,7 @@ variables = {
     "json":json
 }
 
-executor = execute.BS_executor(variables=variables, sandbox_mode=False,use_reserved=True)
+executor = execute.BS_executor(variables=variables, sandbox_mode=False,use_reserved=True,max_loop=float("inf"))
 
 
 def find_start_curly_brackets(terminal_input):

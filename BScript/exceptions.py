@@ -4,6 +4,10 @@ class SandBoxPrivilegesException(BaseException):
   """
   Raise: when sandbox doesn't have required privileges to do something
   """
+class SandboxMemoryOverflowException(BaseException):
+  """
+  Raise: when memory usage is overflowed
+  """
 class UnsupportedOperationException(BaseException):
   """
   Raise: when BinaryExpression tries executing the process with an unsupported operator

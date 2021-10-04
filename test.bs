@@ -1,8 +1,2 @@
-let numbers = [45, 4, 9, 16, 25];
-let txt = "";
-numbers.forEach(myFunction);
-
-function myFunction(value) {
-  txt += value.toString() + ",";
-}
-console.log(txt)
+let array = []
+console.log(a)

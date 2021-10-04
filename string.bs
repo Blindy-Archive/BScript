@@ -1,4 +1,4 @@
-p_import("BScript.unit_test","unit_test")
+const unit_test =p_import("BScript.unit_test")
 tester = unit_test.test()
 
 // Test Case 0

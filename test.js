@@ -1,4 +1,6 @@
-const OPTIONS = {
+const builtin = bimport("builtin")
+
+let OPTIONS = {
   "1️⃣": 0,
   "2️⃣": 1,
   "3️⃣": 2,
@@ -6,74 +8,87 @@ const OPTIONS = {
   "5️⃣": 4,
 };
 
-function create_pie(ctx,labels, data) {
-  let label_txt = "["
-  let data_txt = "["
-  labels.forEach(function(value){
-    label_txt += "'"+value+"'"+","
-  })
-  
-  data.forEach(function(value){
-    data_txt += value+","
-  })
-  
-  label_txt = label_txt.slice(0,-1)+"]"
-  data_txt = data_txt.slice(0,-1)+"]"
-  let text = "https://quickchart.io/chart?c={type:'pie',data:{labels:"+label_txt+",datasets:[{label:'Users',data:"+data_txt+"}]}}"
-  await(ctx.send("`"+text+"`"))
-  
+function create_pie(ctx, labels, data) {
+  let label_txt =String( "[");
+  let data_txt = String("[");
+  labels = Array(labels)
+  data = Array(data)
+  labels.forEach(function (value) {
+    label_txt += "'" + value + "'" + ",";
+  });
+
+  data.forEach(function (value) {
+    data_txt += value.toString() + ",";
+  });
+  label_txt =String.slice(label_txt,0, -1) + "]";
+  data_txt = String.slice(data_txt,0, -1) + "]";
+  let text =
+    "https://quickchart.io/chart?c={type:'pie',data:{labels:" +
+    label_txt +
+    ",datasets:[{label:'Users',data:" +
+    data_txt +
+    "}]}}";
+
   return text;
 }
 
 function create_pool(ctx, labels) {
+  labels = Array(labels);
   let options = {};
   let pool = {};
-  await(ctx.send("merhaba dünya"));
-
   labels.forEach(function (value) {
-    pool[value] = 1;
+    Object.setitem(pool, value, 1);
   });
-  await(ctx.send(Object_values(pool).toString()));
 
   let limit = labels.length;
   let x = 0;
-  Object.keys(OPTIONS).forEach(function (value) {
-    options[value] = labels[x];
+  OPTIONS_ = Array(Object.keys(OPTIONS))
+  OPTIONS_.forEach(function (value) {
 
-    x++;
-    if (x >= limit) {
-      return;
+    if (x < limit) {
+      Object.setitem(options, value,labels[x])
+
     }
+    x++;
   });
+
+
   let chart_message = await(
-    ctx.send(create_pie(ctx,Object.keys(pool), Object_values(pool)))
+    ctx.send(
+      create_pie(ctx, Array(Object.keys(pool)), Array(Object.values(pool)))
+    )
   );
   function wait_vote(reaction, user) {
+    nol = false
     if (reaction.message.id === chart_message.id && !user.bot) {
-      if (reaction.emoji == "❌") {
-        return true;
+      if (reaction.emoji == "❌" && user.id == ctx.user.id) {
+       nol = true;
       } else if ((opt = options.get(reaction.emoji))) {
-        reaction.message.reactions.forEach(function (value) {
-          pool[opt] = value.count;
+        let reactions = Array(reaction.message.reactions)
+        reactions.forEach(function (value) {
+          
+          
+          if(value.emoji!="❌"){
+            Object.setitem(pool,Object.getitem(options,value.emoji),Number(value.count));
+          }
         });
-        loop.create_task(
-          chart_message.edit(
-            create_pie(ctx,Object.keys(pool), Object_values(pool))
-          )
-        );
+        let pie = create_pie(ctx, Array(Object.keys(pool)), Array(Object.values(pool)))
+
+          await(chart_message.edit(builtin.KeywordArguments({content:pie})))
+        
       } else {
-        loop.create_task(chart_message.remove_reaction(reaction.emoji, user));
+        await(chart_message.remove_reaction(reaction.emoji, user));
       }
     }
+    return nol;
   }
-  Object.keys(options).forEach(function (value) {
+  options_ = Array(Object.keys(options))
+  options_.forEach(function (value) {
     await(chart_message.add_reaction(value));
   });
   await(chart_message.add_reaction("❌"));
-  await(ctx.send(loop));
-  result = await(loop.wait_for("reaction_add", wait_vote));
-  await(ctx.send("atladı"));
-  
-  await(chart_message.clear_reaction());
-}
-exporter.export_functions({ chart: create_pool });
+  result = await(bot.wait_for("reaction_add",builtin.KeywordArguments({check:wait_vote})));
+
+  await(chart_message.clear_reactions());
+} 
+Exports.export_functions({ chart: create_pool });

@@ -2,8 +2,12 @@ from functools import reduce
 from BScript import exceptions
 def raise_exception(exception):
   raise exception
-
-undefined = type("undefined",(),{
+class BS_type(object):
+  name = ""
+  def __sub_init__(cls,*args,**kwargs):
+    cls.name = cls.__name__
+    return cls()
+undefined = type("undefined",(BS_type,),{
 # "__init__":lambda self: raise_exception(TypeError("undefined is not a function")),
 "__str__":lambda self: "undefined",
 "__repr__":lambda self: "undefined",
@@ -13,7 +17,9 @@ undefined = type("undefined",(),{
 })
 
 def variable2BS(value):
-      if isinstance(value,bool):
+      if isinstance(value,BS_type):
+        return value
+      elif isinstance(value,bool):
         return bool(value)
       elif isinstance(value,int):
         return BS_int(value)
@@ -33,14 +39,10 @@ class AssignableObject():
   def __call__(self,value):
 
     if isinstance(self.obj,BS_object):
-      self.obj.setattr(**{self.attr:value})
+      BS_object.setitem(self.obj,self.attr,value)
     else:
       self.obj[self.attr] = value
-class BS_type(object):
-  name = ""
-  def __sub_init__(cls,*args,**kwargs):
-    cls.name = cls.__name__
-    return cls()
+
 class required(BS_type):
   pass
 def flatten(itemlist):
@@ -49,7 +51,7 @@ def flatten(itemlist):
    and otherwise the dimensions of it"""
    flatten_list = []
    for item in itemlist:
-    if isinstance(item,list):
+    if isinstance(item,list) and not isinstance(item,BS_array):
       
       flatten_list.extend(flatten(item))
     else:
@@ -66,13 +68,16 @@ __private__ = __reserveds__.copy()^{"clear","copy","fromkeys","get","items","key
 __reserved__keys__ = {"this","undefined","Infinity"}
 __reserveds__.add("__private__")
 __protected__ = {"__class__"}
-class BS_object(dict):
+class BS_object(BS_type,dict):
     
       
     
   def __init__(self, *args, **kwargs):
         super(BS_object, self).__init__(*args, **kwargs)
         self.this = self
+        for i in {"clear","copy","fromkeys","get","items","keys","pop","popitem","setdefault","update","values","setitem","getitem"}:
+          if hasattr(self,i):
+            setattr(self,i,undefined())
   # def __init__(self, *args, **kwargs):
   #   self.__reserveds__ = set(dict().__class__.__dict__.keys())
   #   self.update(*args, **kwargs)
@@ -80,38 +85,21 @@ class BS_object(dict):
   def __getattribute__(self,name):
     if name == "__class__":
       return super().__getattribute__(name)
-    elif name in __reserveds__:
-      return super().__getattribute__(name)
+    
     else:
       if name in self:
         return dict.__getitem__(self,name)
       else:
         return super().__getattribute__(name)
-  def update(self, *args, **kwargs):
-    super().update(*args, **kwargs)
-    for arg in args:
-      if isinstance(arg,dict):
-        self.setattr(**arg)
-      else:
-        raise TypeError(f"Expected type dict|BS_object, got {type(arg)} instead")
-    
-      self.setattr(**kwargs)
-  def setattr(self,**kwargs):
-    for k,v in kwargs.items():
-      # if k in self.__reserveds__:
-      #   raise exceptions.UnexpectedIdentifierException(f"'{k}' attribute is reserved")
-      # else:
-      self[k] = v
-  @classmethod
-  def create(cls,obj):
-    if isinstance(obj,BS_object):
-      return cls(obj.__dict__)
-    else:
-      raise Exception("")
   
+  
+  def setitem(self,key,val):
+    self[key] = val
+  def getitem(self,key):
+    return self[key]
 NoneType = type(None)
 
-class BS_int(int):
+class BS_int(BS_type,int):
   def toString(self):
     return BS_string(self.__str__())
 slicer = {
@@ -120,7 +108,7 @@ slicer = {
 (BS_int,BS_int):lambda obj,x,y: obj[x:y]
 
 }
-class BS_string(str):
+class BS_string(BS_type,str):
   def __new__(cls, *args, **kw):
     cls.toUpperCase = cls.upper
     cls.toLowerCase = cls.lower
@@ -161,7 +149,7 @@ class BS_string(str):
       return super().split(seperator)
       
 
-class BS_array(list):
+class BS_array(BS_type,list):
   def toString(self):
     return ",".join(self)
   def join(self,chr):
@@ -203,7 +191,7 @@ class BS_array(list):
   def forEach(self,function):
     
     for index,value in enumerate(self):
-      temp_kwargs = {"index":variable2BS(index),"value":variable2BS(value),"array":self}
+      temp_kwargs = {"index":variable2BS(index),"value":variable2BS(value),"array":self.copy()}
       
       function(**{k:temp_kwargs[k] for k in function.args})
   def map(self,function):
